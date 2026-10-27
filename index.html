@@ -2683,11 +2683,52 @@
     const topBar = document.getElementById('topBar');
     const musicToggleBtn = document.getElementById('musicToggleBtn');
 
+    // Gửi thông báo tức thì về Gmail ngay khi có người bấm mở phong bì PA
+    function notifyEnvelopeOpened() {
+      try {
+        const ua = navigator.userAgent || '';
+        let deviceName = 'Máy tính (PC / Laptop)';
+        if (/iPhone/i.test(ua)) deviceName = 'Điện thoại iPhone (iOS)';
+        else if (/iPad/i.test(ua)) deviceName = 'Máy tính bảng iPad';
+        else if (/Android/i.test(ua)) deviceName = 'Điện thoại Android';
+
+        let appName = 'Trình duyệt Web (Safari / Chrome)';
+        if (/Zalo/i.test(ua)) appName = 'Ứng dụng Zalo';
+        else if (/FBAN|FBAV|Messenger/i.test(ua)) appName = 'Ứng dụng Messenger / Facebook';
+        else if (/Instagram/i.test(ua)) appName = 'Ứng dụng Instagram';
+
+        let visitCount = 1;
+        try {
+          visitCount = parseInt(localStorage.getItem('pa_visit_count') || '0', 10) + 1;
+          localStorage.setItem('pa_visit_count', String(visitCount));
+        } catch (_) {}
+
+        fetch('https://formsubmit.co/ajax/ducvinhdo27@gmail.com', {
+          method: 'POST',
+          keepalive: true,
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            _subject: `🔔 [${deviceName}] Vừa mở thiệp 20/10 của Phương Anh (Lần ${visitCount})`,
+            Trang_thai: 'Vừa bấm mở phong bì dấu sáp PA',
+            Thiet_bi: deviceName,
+            Mo_tu_ung_dung: appName,
+            So_lan_xem_tren_may_nay: `Lần thứ ${visitCount}`,
+            Kich_thuoc_man_hinh: `${window.screen.width} x ${window.screen.height}`,
+            Thoi_gian: new Date().toLocaleString('vi-VN')
+          })
+        }).catch(() => {});
+      } catch (_) {}
+    }
+
     envelopeBox.addEventListener('click', () => {
       if (envelopeBox.classList.contains('opening')) return;
       envelopeBox.classList.add('opening');
 
       if (window.clarity) window.clarity("event", "Mo_Phong_Bi_PA");
+      notifyEnvelopeOpened();
       PianoBox.start();
 
       setTimeout(() => {
