@@ -4,6 +4,34 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Dành tặng Phương Anh, cả một vườn hoa — 20/10</title>
+  <!-- Microsoft Clarity (Project ID: z4dk18htui) - Xem lại phiên truy cập & thao tác màn hình -->
+  <script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "z4dk18htui");
+
+    // Tự động nhận diện thiết bị & ứng dụng mở link (Zalo, Messenger, iPhone, Android, PC) mà không cần thêm đuôi vào link
+    (function() {
+      try {
+        var ua = navigator.userAgent || '';
+        var appSource = 'Trinh_duyet_Web';
+        if (/Zalo/i.test(ua)) appSource = 'Zalo';
+        else if (/FBAN|FBAV|Messenger/i.test(ua)) appSource = 'Messenger_Facebook';
+        else if (/Instagram/i.test(ua)) appSource = 'Instagram';
+
+        var deviceType = 'May_tinh_PC';
+        if (/iPhone|iPad|iPod/i.test(ua)) deviceType = 'iPhone_iOS';
+        else if (/Android/i.test(ua)) deviceType = 'Dien_thoai_Android';
+
+        if (window.clarity) {
+          window.clarity("set", "Mo_tu_ung_dung", appSource);
+          window.clarity("set", "Loai_thiet_bi", deviceType);
+        }
+      } catch (e) {}
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400;1,600&family=Dancing+Script:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -1247,7 +1275,7 @@
     }
   </style>
 </head>
-<body>
+<body data-clarity-unmask="true">
 
   <!-- LỚP BẦU TRỜI CHUYỂN TIẾP NGÀY & ĐÊM -->
   <div class="sky-day"></div>
@@ -1452,11 +1480,20 @@
     </div>
   </div>
 
+  <!-- FILE NHẠC THU ÂM CỦA BẠN (Đặt file nhac.mp3, nhac.m4a hoặc nhac.wav cùng thư mục với index.html) -->
+  <audio id="bgMusic" loop preload="auto">
+    <source src="nhac.mp3" type="audio/mpeg" />
+    <source src="nhac.m4a" type="audio/mp4" />
+    <source src="nhac.wav" type="audio/wav" />
+  </audio>
+
   <script>
     /* =====================================================
-     * 1. HỘP NHẠC PIANO DỊU DÀNG (WEB AUDIO SYNTH)
+     * 1. PHÁT BẢN NHẠC THU ÂM RIÊNG (TỰ ĐỘNG DÙNG NHẠC CỦA BẠN)
      * ===================================================== */
     const PianoBox = (function() {
+      const audioEl = document.getElementById('bgMusic');
+      let usingCustomAudio = false;
       let audioCtx = null;
       let isPlaying = false;
       let timerId = null;
@@ -1511,33 +1548,64 @@
       }
 
       function scheduleNext() {
-        if (!isPlaying) return;
+        if (!isPlaying || usingCustomAudio) return;
         const current = melody[noteIndex];
         playNote(current.f, current.d);
         noteIndex = (noteIndex + 1) % melody.length;
         timerId = setTimeout(scheduleNext, current.d * 650);
       }
 
+      function startFallbackSynth() {
+        if (!audioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContextClass) return;
+          audioCtx = new AudioContextClass();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        scheduleNext();
+      }
+
       return {
         start() {
-          if (!audioCtx) {
-            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-            if (!AudioContextClass) return;
-            audioCtx = new AudioContextClass();
-          }
-          if (audioCtx.state === 'suspended') {
-            audioCtx.resume();
-          }
           if (isPlaying) return;
           isPlaying = true;
-          scheduleNext();
+
+          // Ưu tiên phát file thu âm của bạn (nhac.mp3 / nhac.m4a / nhac.wav)
+          if (audioEl) {
+            audioEl.volume = 0.85;
+            const playPromise = audioEl.play();
+            if (playPromise !== undefined) {
+              playPromise
+                .then(() => {
+                  usingCustomAudio = true;
+                  clearTimeout(timerId);
+                })
+                .catch(() => {
+                  // Nếu chưa bỏ file nhac.mp3 vào thư mục thì tự động phát Piano dự phòng
+                  usingCustomAudio = false;
+                  startFallbackSynth();
+                });
+              return;
+            }
+          }
+          startFallbackSynth();
         },
         toggle() {
           if (isPlaying) {
             isPlaying = false;
+            if (usingCustomAudio && audioEl) {
+              audioEl.pause();
+            }
             clearTimeout(timerId);
             return false;
           } else {
+            if (usingCustomAudio && audioEl) {
+              isPlaying = true;
+              audioEl.play();
+              return true;
+            }
             this.start();
             return true;
           }
@@ -2619,6 +2687,7 @@
       if (envelopeBox.classList.contains('opening')) return;
       envelopeBox.classList.add('opening');
 
+      if (window.clarity) window.clarity("event", "Mo_Phong_Bi_PA");
       PianoBox.start();
 
       setTimeout(() => {
@@ -2733,6 +2802,7 @@
       cardPageBack.classList.remove('active');
       cardPageFront.classList.add('active');
       wishModal.classList.add('active');
+      if (window.clarity) window.clarity("event", "Mo_Thiep_Chuc");
 
       // Tách biệt rõ ràng: đợi hiệu ứng mở tấm thiệp (0.6s) hoàn tất rồi mới bắt đầu chạy chữ chúc từng dòng
       if (!hasTypedOnce) {
@@ -2763,6 +2833,7 @@
     toBackPageBtn.addEventListener('click', () => {
       cardPageFront.classList.remove('active');
       cardPageBack.classList.add('active');
+      if (window.clarity) window.clarity("event", "Xem_Mat_Sau_Thiep");
     });
 
     toFrontPageBtn.addEventListener('click', () => {
